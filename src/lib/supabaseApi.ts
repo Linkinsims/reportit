@@ -111,14 +111,19 @@ export async function getProfile(): Promise<{
   return data;
 }
 
-export async function getDashboardStats(): Promise<DashboardStats> {
-  const { data, error } = await supabase.rpc("get_dashboard_stats");
+export async function getDashboardStats(
+  orgId: string,
+): Promise<DashboardStats> {
+  const { data, error } = await supabase.rpc("get_dashboard_stats", {
+    org_id: orgId,
+  });
   if (!error && data) return data;
 
   // Fallback: compute from reports if RPC not yet created
   const { data: reports, error: reportsError } = await supabase
     .from("reports")
-    .select("*");
+    .select("*")
+    .eq("organization_id", orgId);
 
   if (reportsError) throw reportsError;
   const r = reports || [];

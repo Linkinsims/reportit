@@ -28,7 +28,7 @@ export function Dashboard({ profile, org, onNavigate }: Props) {
   useEffect(() => {
     async function load() {
       try {
-        const data = await getDashboardStats();
+        const data = await getDashboardStats(org.id);
         setStats(data);
       } catch (error) {
         console.error(error);
