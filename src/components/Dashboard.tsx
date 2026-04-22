@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import { getDashboardStats } from "../lib/supabaseApi";
 import { Page } from "./MainApp";
 
@@ -25,7 +24,6 @@ const STATUS_COLORS = {
 export function Dashboard({ profile, org, onNavigate }: Props) {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const supabase = useSupabaseClient();
 
   useEffect(() => {
     async function load() {

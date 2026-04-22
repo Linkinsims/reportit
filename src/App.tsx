@@ -1,5 +1,6 @@
-import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
+import { useAuth } from "./contexts/AuthContext";
 import { useQuery } from "./lib/useSupabaseQuery";
+import { supabase } from "./lib/supabase";
 import { SignInForm } from "./SignInForm";
 import { Toaster } from "sonner";
 import { OnboardingFlow } from "./components/OnboardingFlow";
@@ -15,20 +16,21 @@ export default function App() {
 }
 
 function AuthRouter() {
-  const session = useSession();
-  const supabase = useSupabaseClient();
+  const { user, loading: authLoading } = useAuth();
 
-  const { data: profileData, loading } = useQuery(
+  const { data: profileData, loading: profileLoading } = useQuery(
     async () => {
-      if (!session) return null;
+      if (!user) return null;
       const { data, error } = await supabase.rpc("get_my_profile");
       if (error) throw error;
       return data;
     },
-    { enabled: !!session },
+    { enabled: !!user },
   );
 
-  if (loading || (session && profileData === undefined)) {
+  const loading = authLoading || (user && profileLoading);
+
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
@@ -36,7 +38,7 @@ function AuthRouter() {
     );
   }
 
-  if (!session) {
+  if (!user) {
     return <LandingPage />;
   }
 

@@ -1,11 +1,9 @@
-"use client";
-import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
+import { useAuth } from "./contexts/AuthContext";
 import { useState } from "react";
 import { toast } from "sonner";
 
 export function SignInForm() {
-  const supabase = useSupabaseClient();
-  const session = useSession();
+  const { signIn: signInAction, signUp: signUpAction } = useAuth();
   const [flow, setFlow] = useState<"signIn" | "signUp">("signIn");
   const [submitting, setSubmitting] = useState(false);
 
@@ -18,14 +16,9 @@ export function SignInForm() {
 
     try {
       if (flow === "signIn") {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
+        await signInAction(email, password);
       } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
+        await signUpAction(email, password);
       }
     } catch (error: unknown) {
       let toastTitle = "";
@@ -43,10 +36,6 @@ export function SignInForm() {
       setSubmitting(false);
     }
   };
-
-  if (session) {
-    return null;
-  }
 
   return (
     <div className="w-full">

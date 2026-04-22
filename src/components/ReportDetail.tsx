@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
 import {
   getReport,
   getOrgMembers,
@@ -7,6 +6,7 @@ import {
   assignReport,
   addNote,
 } from "../lib/supabaseApi";
+import { supabase } from "../lib/supabase";
 import { Page } from "./MainApp";
 import { PriorityBadge, StatusBadge, CategoryBadge } from "./Badges";
 import { toast } from "sonner";
@@ -28,7 +28,6 @@ export function ReportDetail({ reportDocId, profile, org, onNavigate }: Props) {
   const [activeTab, setActiveTab] = useState<
     "details" | "history" | "notes" | "audit"
   >("details");
-  const supabase = useSupabaseClient();
 
   useEffect(() => {
     async function load() {

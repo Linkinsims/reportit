@@ -1,4 +1,4 @@
-import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { useAuth } from "../contexts/AuthContext";
 import { Page } from "./MainApp";
 
 type Props = {
@@ -147,7 +147,7 @@ export function Sidebar({
   isOpen,
   onClose,
 }: Props) {
-  const supabase = useSupabaseClient();
+  const { signOut } = useAuth();
 
   const visibleItems = navItems.filter((item) =>
     item.roles.includes(profile.role),
@@ -216,12 +216,12 @@ export function Sidebar({
         <div className="flex items-center gap-3 px-3 py-2 rounded-lg">
           <div className="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-indigo-700 font-semibold text-sm">
-              {profile.displayName.charAt(0).toUpperCase()}
+              {profile.displayName?.charAt(0).toUpperCase() || "U"}
             </span>
           </div>
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-gray-900 truncate">
-              {profile.display_name}
+              {profile.displayName || "User"}
             </div>
             <div className="text-xs text-gray-400 capitalize">
               {profile.role}
@@ -229,7 +229,7 @@ export function Sidebar({
           </div>
         </div>
         <button
-          onClick={() => supabase.auth.signOut()}
+          onClick={() => signOut()}
           className="w-full mt-1 flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors"
         >
           <svg

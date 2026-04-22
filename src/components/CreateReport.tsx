@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
 import { createReport, uploadPhoto } from "../lib/supabaseApi";
 import { Page } from "./MainApp";
 import { toast } from "sonner";
@@ -21,7 +20,6 @@ export function CreateReport({ profile, org, onNavigate }: Props) {
   const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-  const supabase = useSupabaseClient();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
+import { useAuth } from "../contexts/AuthContext";
 import { createOrganization, joinOrganization } from "../lib/supabaseApi";
 import { toast } from "sonner";
 
@@ -9,8 +9,7 @@ type Role = "employee" | "manager" | "admin";
 export function OnboardingFlow() {
   const [step, setStep] = useState<Step>("choice");
   const [loading, setLoading] = useState(false);
-  const supabase = useSupabaseClient();
-  const session = useSession();
+  const { user } = useAuth();
 
   const [createForm, setCreateForm] = useState({
     name: "",
@@ -28,11 +27,11 @@ export function OnboardingFlow() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (!session?.user) throw new Error("Not authenticated");
+      if (!user) throw new Error("Not authenticated");
       await createOrganization(
         createForm.name,
         createForm.slug.toLowerCase().replace(/\s+/g, "-"),
-        session.user.id,
+        user.id,
         createForm.displayName,
         createForm.role,
       );
@@ -48,10 +47,10 @@ export function OnboardingFlow() {
     e.preventDefault();
     setLoading(true);
     try {
-      if (!session?.user) throw new Error("Not authenticated");
+      if (!user) throw new Error("Not authenticated");
       await joinOrganization(
         joinForm.slug.toLowerCase(),
-        session.user.id,
+        user.id,
         joinForm.displayName,
         joinForm.role,
       );
