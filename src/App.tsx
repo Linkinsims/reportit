@@ -1,8 +1,7 @@
-import { Authenticated, Unauthenticated, useQuery } from "convex/react";
-import { api } from "../convex/_generated/api";
+import { useSupabaseClient, useSession } from "@supabase/auth-helpers-react";
+import { useQuery } from "./lib/useSupabaseQuery";
 import { SignInForm } from "./SignInForm";
 import { Toaster } from "sonner";
-import { useState } from "react";
 import { OnboardingFlow } from "./components/OnboardingFlow";
 import { MainApp } from "./components/MainApp";
 
@@ -10,20 +9,26 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" richColors />
-      <Authenticated>
-        <AuthenticatedApp />
-      </Authenticated>
-      <Unauthenticated>
-        <LandingPage />
-      </Unauthenticated>
+      <AuthRouter />
     </div>
   );
 }
 
-function AuthenticatedApp() {
-  const profileData = useQuery(api.organizations.getMyProfile);
+function AuthRouter() {
+  const session = useSession();
+  const supabase = useSupabaseClient();
 
-  if (profileData === undefined) {
+  const { data: profileData, loading } = useQuery(
+    async () => {
+      if (!session) return null;
+      const { data, error } = await supabase.rpc("get_my_profile");
+      if (error) throw error;
+      return data;
+    },
+    { enabled: !!session },
+  );
+
+  if (loading || (session && profileData === undefined)) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-indigo-600"></div>
@@ -31,11 +36,15 @@ function AuthenticatedApp() {
     );
   }
 
+  if (!session) {
+    return <LandingPage />;
+  }
+
   if (!profileData) {
     return <OnboardingFlow />;
   }
 
-  return <MainApp profile={profileData.profile} org={profileData.org!} />;
+  return <MainApp profile={profileData.profile} org={profileData.org} />;
 }
 
 function LandingPage() {
@@ -44,8 +53,18 @@ function LandingPage() {
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
             </svg>
           </div>
           <span className="text-xl font-bold text-gray-900">ReportIt</span>
@@ -55,12 +74,26 @@ function LandingPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <svg className="w-9 h-9 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg
+                className="w-9 h-9 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
               </svg>
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to ReportIt</h1>
-            <p className="text-gray-500">Incident reporting made simple for modern teams.</p>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Welcome to ReportIt
+            </h1>
+            <p className="text-gray-500">
+              Incident reporting made simple for modern teams.
+            </p>
           </div>
           <div className="bg-white rounded-2xl shadow-sm border p-8">
             <SignInForm />

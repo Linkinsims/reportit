@@ -1,34 +1,58 @@
-import { useState } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Doc } from "../../convex/_generated/dataModel";
+import { useState, useEffect } from "react";
+import { useSupabaseClient } from "@supabase/auth-helpers-react";
+import { listReports, getMyReports } from "../lib/supabaseApi";
 import { Page } from "./MainApp";
 import { PriorityBadge, StatusBadge, CategoryBadge } from "./Badges";
 
 type Props = {
-  profile: Doc<"userProfiles">;
-  org: Doc<"organizations">;
+  profile: any;
+  org: any;
   onNavigate: (page: Page) => void;
   myReportsOnly?: boolean;
 };
 
-export function ReportsList({ profile, org, onNavigate, myReportsOnly }: Props) {
+export function ReportsList({
+  profile,
+  org,
+  onNavigate,
+  myReportsOnly,
+}: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [priorityFilter, setPriorityFilter] = useState("all");
+  const [reports, setReports] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const supabase = useSupabaseClient();
 
-  const allReports = useQuery(api.reports.listReports, {
-    organizationId: org._id,
-    status: statusFilter !== "all" ? statusFilter : undefined,
-    category: categoryFilter !== "all" ? categoryFilter : undefined,
-    priority: priorityFilter !== "all" ? priorityFilter : undefined,
-    search: search || undefined,
-  });
-
-  const myReports = useQuery(api.reports.getMyReports, { organizationId: org._id });
-
-  const reports = myReportsOnly ? myReports : allReports;
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      try {
+        const data = myReportsOnly
+          ? await getMyReports(org.id)
+          : await listReports(org.id, {
+              status: statusFilter !== "all" ? statusFilter : undefined,
+              category: categoryFilter !== "all" ? categoryFilter : undefined,
+              priority: priorityFilter !== "all" ? priorityFilter : undefined,
+              search: search || undefined,
+            });
+        setReports(data);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [
+    org.id,
+    myReportsOnly,
+    statusFilter,
+    categoryFilter,
+    priorityFilter,
+    search,
+  ]);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -45,8 +69,18 @@ export function ReportsList({ profile, org, onNavigate, myReportsOnly }: Props) 
           onClick={() => onNavigate({ name: "create" })}
           className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 4v16m8-8H4"
+            />
           </svg>
           New Report
         </button>
@@ -98,18 +132,30 @@ export function ReportsList({ profile, org, onNavigate, myReportsOnly }: Props) 
       )}
 
       <div className="bg-white rounded-xl border overflow-hidden">
-        {!reports ? (
+        {loading ? (
           <div className="flex items-center justify-center h-32">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
           </div>
         ) : reports.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
-            <svg className="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            <svg
+              className="w-12 h-12 mx-auto mb-3 text-gray-200"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+              />
             </svg>
             <p className="font-medium">No reports found</p>
             <p className="text-sm mt-1">
-              {myReportsOnly ? "You haven't submitted any reports yet." : "Try adjusting your filters."}
+              {myReportsOnly
+                ? "You haven't submitted any reports yet."
+                : "Try adjusting your filters."}
             </p>
           </div>
         ) : (
@@ -117,26 +163,51 @@ export function ReportsList({ profile, org, onNavigate, myReportsOnly }: Props) 
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">ID</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Title</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">Category</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Priority</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Reporter</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">Date</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    ID
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Title
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden md:table-cell">
+                    Category
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Priority
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">
+                    Reporter
+                  </th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide hidden lg:table-cell">
+                    Date
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {reports.map((report) => (
                   <tr
-                    key={report._id}
-                    onClick={() => onNavigate({ name: "report-detail", reportId: report._id })}
+                    key={report.id}
+                    onClick={() =>
+                      onNavigate({
+                        name: "report-detail",
+                        reportId: report.report_id,
+                      })
+                    }
                     className="hover:bg-gray-50 cursor-pointer transition-colors"
                   >
-                    <td className="px-4 py-3 text-xs font-mono text-gray-400">{report.reportId}</td>
+                    <td className="px-4 py-3 text-xs font-mono text-gray-400">
+                      {report.report_id}
+                    </td>
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900 text-sm">{report.title}</div>
-                      <div className="text-xs text-gray-400 mt-0.5 line-clamp-1">{report.description}</div>
+                      <div className="font-medium text-gray-900 text-sm">
+                        {report.title}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-0.5 line-clamp-1">
+                        {report.description}
+                      </div>
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <CategoryBadge category={report.category} />
@@ -148,10 +219,10 @@ export function ReportsList({ profile, org, onNavigate, myReportsOnly }: Props) 
                       <StatusBadge status={report.status} />
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">
-                      {(report as any).reporterName}
+                      {report.reporter?.display_name}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-400 hidden lg:table-cell whitespace-nowrap">
-                      {new Date(report.incidentAt).toLocaleDateString()}
+                      {new Date(report.incident_at).toLocaleDateString()}
                     </td>
                   </tr>
                 ))}

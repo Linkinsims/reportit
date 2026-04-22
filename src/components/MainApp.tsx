@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Doc } from "../../convex/_generated/dataModel";
 import { Sidebar } from "./Sidebar";
 import { Dashboard } from "./Dashboard";
 import { ReportsList } from "./ReportsList";
@@ -18,8 +17,8 @@ export type Page =
   | { name: "settings" };
 
 type Props = {
-  profile: Doc<"userProfiles">;
-  org: Doc<"organizations">;
+  profile: any;
+  org: any;
 };
 
 export function MainApp({ profile, org }: Props) {
@@ -57,8 +56,18 @@ export function MainApp({ profile, org }: Props) {
             onClick={() => setSidebarOpen(true)}
             className="p-1.5 rounded-lg hover:bg-gray-100"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
             </svg>
           </button>
           <span className="font-semibold text-gray-900">ReportIt</span>
@@ -72,25 +81,26 @@ export function MainApp({ profile, org }: Props) {
             <ReportsList profile={profile} org={org} onNavigate={navigate} />
           )}
           {page.name === "my-reports" && (
-            <ReportsList profile={profile} org={org} onNavigate={navigate} myReportsOnly />
+            <ReportsList
+              profile={profile}
+              org={org}
+              onNavigate={navigate}
+              myReportsOnly
+            />
           )}
           {page.name === "create" && (
             <CreateReport profile={profile} org={org} onNavigate={navigate} />
           )}
           {page.name === "report-detail" && (
             <ReportDetail
-              reportDocId={page.reportId as any}
+              reportDocId={page.reportId}
               profile={profile}
               org={org}
               onNavigate={navigate}
             />
           )}
-          {page.name === "audit-log" && (
-            <AuditLogPage org={org} />
-          )}
-          {page.name === "settings" && (
-            <Settings profile={profile} org={org} />
-          )}
+          {page.name === "audit-log" && <AuditLogPage org={org} />}
+          {page.name === "settings" && <Settings profile={profile} org={org} />}
         </main>
       </div>
     </div>

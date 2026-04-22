@@ -1,22 +1,17 @@
 {
-  "name": "flex-template",
+  "name": "reportit",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "npm-run-all --parallel dev:frontend dev:backend",
-    "dev:frontend": "vite --open",
-    "dev:backend": "convex dev",
+    "dev": "vite --open",
     "build": "vite build",
-    "lint": "tsc -p convex -noEmit --pretty false && tsc -p . -noEmit --pretty false && convex dev --once && vite build"
+    "lint": "tsc -p . -noEmit --pretty false && vite build"
   },
   "dependencies": {
-    "@convex-dev/auth": "^0.0.80",
-    "@types/bcryptjs": "^2.4.6",
-    "bcryptjs": "^3.0.3",
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.47.0",
     "clsx": "^2.1.1",
-    "convex": "^1.31.2",
-    "openai": "^6.34.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "sonner": "^2.0.3",
