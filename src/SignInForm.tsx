@@ -21,6 +21,7 @@ export function SignInForm() {
         await signUpAction(email, password);
       }
     } catch (error: unknown) {
+      console.error("Auth error:", error);
       let toastTitle = "";
       if (error instanceof Error) {
         if (error.message.includes("Invalid")) {
