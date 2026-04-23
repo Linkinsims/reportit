@@ -505,6 +505,9 @@ export async function createOrganization(
   displayName: string,
   role: string,
 ): Promise<{ profileId: string; orgId: string }> {
+  // Wait for auth user to propagate (eventual consistency)
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   const { data: org, error: orgError } = await supabase
     .from("organizations")
     .insert({ name, slug, plan: "trial" })
@@ -535,6 +538,9 @@ export async function joinOrganization(
   displayName: string,
   role: string,
 ): Promise<{ profileId: string; orgId: string }> {
+  // Wait for auth user to propagate (eventual consistency)
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+
   const { data: org, error } = await supabase
     .from("organizations")
     .select("id")
