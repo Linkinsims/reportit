@@ -1,5 +1,9 @@
 import { supabase } from "./supabase";
 
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 // Types
 export interface Profile {
   id: string;
@@ -498,6 +502,10 @@ export async function addNote(
 }
 
 // Organization
+async function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 export async function createOrganization(
   name: string,
   slug: string,
@@ -505,16 +513,48 @@ export async function createOrganization(
   displayName: string,
   role: string,
 ): Promise<{ profileId: string; orgId: string }> {
-  // Wait for auth user to propagate (eventual consistency)
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Wait for auth user to propagate with retry
+  let profileError: any;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await wait(attempt === 1 ? 1000 : 2000);
+    
+    try {
+      const { data: org, error: orgError } = await supabase
+        .from("organizations")
+        .insert({ name, slug, plan: "trial" })
+        .select()
+        .single();
 
-  const { data: org, error: orgError } = await supabase
-    .from("organizations")
-    .insert({ name, slug, plan: "trial" })
-    .select()
-    .single();
+      if (orgError) throw orgError;
 
-  if (orgError) throw orgError;
+      const { data: profile, error: pe } = await supabase
+        .from("user_profiles")
+        .insert({
+          user_id: userId,
+          organization_id: org.id,
+          role,
+          display_name: displayName,
+        })
+        .select()
+        .single();
+
+      if (pe) {
+        // Clean up org if profile insert fails
+        await supabase.from("organizations").delete().eq("id", org.id);
+        profileError = pe;
+        continue; // retry
+      }
+
+      return { profileId: profile.id, orgId: org.id };
+    } catch (err: any) {
+      if (attempt === 3) throw err;
+    }
+  }
+  
+  throw profileError || new Error("Failed to create organization after retries");
+}
+
+  console.log("Org created:", org.id);
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
@@ -527,8 +567,14 @@ export async function createOrganization(
     .select()
     .single();
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    console.error("Profile creation error:", profileError);
+    // Clean up org if profile insert fails
+    await supabase.from("organizations").delete().eq("id", org.id);
+    throw profileError;
+  }
 
+  console.log("Profile created:", profile.id);
   return { profileId: profile.id, orgId: org.id };
 }
 
@@ -538,17 +584,52 @@ export async function joinOrganization(
   displayName: string,
   role: string,
 ): Promise<{ profileId: string; orgId: string }> {
-  // Wait for auth user to propagate (eventual consistency)
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Wait for auth user to propagate with retry
+  let profileError: any;
+  let org: any = null;
+  
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    await wait(attempt === 1 ? 1000 : 2000);
+    
+    try {
+      if (!org) {
+        const { data: orgData, error: orgErr } = await supabase
+          .from("organizations")
+          .select("id")
+          .eq("slug", slug)
+          .eq("is_active", true)
+          .single();
+          
+        if (orgErr) throw new Error("Organization not found");
+        org = orgData;
+      }
 
-  const { data: org, error } = await supabase
-    .from("organizations")
-    .select("id")
-    .eq("slug", slug)
-    .eq("is_active", true)
-    .single();
+      const { data: profile, error: pe } = await supabase
+        .from("user_profiles")
+        .insert({
+          user_id: userId,
+          organization_id: org.id,
+          role,
+          display_name: displayName,
+        })
+        .select()
+        .single();
 
-  if (error) throw new Error("Organization not found");
+      if (pe) {
+        profileError = pe;
+        continue; // retry
+      }
+
+      return { profileId: profile.id, orgId: org.id };
+    } catch (err: any) {
+      if (attempt === 3) throw err;
+    }
+  }
+  
+  throw profileError || new Error("Failed to join organization");
+}
+
+  console.log("Found org:", org.id);
 
   const { data: profile, error: profileError } = await supabase
     .from("user_profiles")
@@ -561,8 +642,12 @@ export async function joinOrganization(
     .select()
     .single();
 
-  if (profileError) throw profileError;
+  if (profileError) {
+    console.error("Profile creation error:", profileError);
+    throw profileError;
+  }
 
+  console.log("Profile created:", profile.id);
   return { profileId: profile.id, orgId: org.id };
 }
 
