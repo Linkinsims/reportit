@@ -21,16 +21,17 @@ export function SignInForm() {
         await signUpAction(email, password);
       }
     } catch (error: unknown) {
-      console.error("Auth error:", error);
       let toastTitle = "";
       if (error instanceof Error) {
-        if (error.message.includes("Invalid")) {
-          toastTitle = "Invalid credentials. Please try again.";
+        const msg = error.message.toLowerCase();
+        if (msg.includes("invalid login credentials") || msg.includes("invalid credentials")) {
+          toastTitle = "Wrong email or password.";
+        } else if (msg.includes("user already registered") || msg.includes("already registered")) {
+          toastTitle = "Account already exists. Sign in instead.";
+        } else if (msg.includes("email not confirmed")) {
+          toastTitle = "Please confirm your email first.";
         } else {
-          toastTitle =
-            flow === "signIn"
-              ? "Could not sign in, did you mean to sign up?"
-              : "Could not sign up, did you mean to sign in?";
+          toastTitle = error.message;
         }
       }
       toast.error(toastTitle);
