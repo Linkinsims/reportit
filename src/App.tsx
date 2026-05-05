@@ -94,9 +94,23 @@ function LandingPage() {
               Incident reporting made simple for modern teams.
             </p>
           </div>
-          <div className="bg-white rounded-2xl shadow-sm border p-8">
+                 <div className="bg-white rounded-2xl shadow-sm border p-8">
             <SignInForm />
           </div>
+          <div className="text-center mt-4">
+            <button
+              onClick={async () => {
+                await supabase.auth.signInWithPassword({
+                  email: "demo@linkin.com",
+                  password: "demo123",
+                });
+              }}
+              className="text-sm text-indigo-600 hover:underline font-medium"
+            >
+              View live demo →
+            </button>
+          </div>
+
         </div>
       </main>
     </div>
