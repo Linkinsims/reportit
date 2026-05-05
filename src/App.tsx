@@ -101,7 +101,7 @@ function LandingPage() {
             <button
               onClick={async () => {
                 await supabase.auth.signInWithPassword({
-                  email: "demo@linkin.com",
+                  email: "demo@data.com",
                   password: "demo123",
                 });
               }}
