@@ -509,47 +509,15 @@ export async function createOrganization(
   displayName: string,
   role: string,
 ): Promise<{ profileId: string; orgId: string }> {
-  // Wait for auth user to propagate with retry
-  let profileError: any;
-  for (let attempt = 1; attempt <= 3; attempt++) {
-    await wait(attempt === 1 ? 1000 : 2000);
+  const { data, error } = await supabase.rpc("create_organization", {
+    org_name: name,
+    org_slug: slug,
+    user_display_name: displayName,
+    user_role: role,
+  });
 
-    try {
-      const { data: org, error: orgError } = await supabase
-        .from("organizations")
-        .insert({ name, slug, plan: "trial" })
-        .select()
-        .single();
-
-      if (orgError) throw orgError;
-
-      const { data: profile, error: pe } = await supabase
-        .from("user_profiles")
-        .insert({
-          user_id: userId,
-          organization_id: org.id,
-          role,
-          display_name: displayName,
-        })
-        .select()
-        .single();
-
-      if (pe) {
-        // Clean up org if profile insert fails
-        await supabase.from("organizations").delete().eq("id", org.id);
-        profileError = pe;
-        continue; // retry
-      }
-
-      return { profileId: profile.id, orgId: org.id };
-    } catch (err: any) {
-      if (attempt === 3) throw err;
-    }
-  }
-
-  throw (
-    profileError || new Error("Failed to create organization after retries")
-  );
+  if (error) throw error;
+  return { profileId: data.profileId, orgId: data.orgId };
 }
 
 export async function joinOrganization(
